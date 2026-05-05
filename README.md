@@ -1,7 +1,7 @@
 # Routing tra namespace Linux con veth pair
 
 **Autore:** Piero Franceschini
-**Codice variante:** B1
+**Codice variante:** B2
 **Repo:** https://github.com/pfranceschini88-dev/nv-progettino-B2-franceschini
 
 \---
@@ -29,7 +29,7 @@ Il progettino costruisce a mano, usando esclusivamente primitive del kernel Linu
 |`ns2`|router (ip\_forward=1)|`veth-ns2b`|`10.0.2.1/24`|
 |`ns3`|host destinazione|`veth-b`|`10.0.2.10/24`|
 
-Ogni **veth pair** è un cavo virtuale bidirezionale: i due capi sono sempre creati insieme e spostati nei namespace di interesse. `ns2` ha `net.ipv4.ip\_forward=1` attivo al suo interno, il che lo trasforma da host a router: il kernel non droppa più i pacchetti non destinati a sé, ma li instrada verso l'interfaccia corretta.
+Ogni **veth pair** è un cavo virtuale bidirezionale: i due capi sono sempre creati insieme e spostati nei namespace di interesse. `ns2` ha `net.ipv4.ip\\\_forward=1` attivo al suo interno, il che lo trasforma da host a router: il kernel non droppa più i pacchetti non destinati a sé, ma li instrada verso l'interfaccia corretta.
 
 \---
 
@@ -39,7 +39,7 @@ Ogni **veth pair** è un cavo virtuale bidirezionale: i due capi sono sempre cre
 * Pacchetti: `iproute2`, `iputils-ping`, `traceroute`, `tcpdump`
 
 ```bash
-sudo apt update \&\& sudo apt install -y iproute2 iputils-ping traceroute tcpdump
+sudo apt update \\\&\\\& sudo apt install -y iproute2 iputils-ping traceroute tcpdump
 ```
 
 * Privilegi `sudo` (necessari per operare sui namespace di rete)
@@ -75,7 +75,7 @@ Output atteso:
 
 \[OK] ns1 configurato: 10.0.1.10/24, gw 10.0.1.1
 
-\[OK] ns2 (router) configurato: 10.0.1.1/24 + 10.0.2.1/24, ip\_forward=1
+\[OK] ns2 (router) configurato: 10.0.1.1/24 + 10.0.2.1/24, ip\\\_forward=1
 
 \[OK] ns3 configurato: 10.0.2.10/24, gw 10.0.2.1
 
@@ -85,9 +85,9 @@ Output atteso:
 
 
 
-&#x20; ns1 (10.0.1.10) ──veth-a──veth-ns2a── ns2 ──veth-ns2b──veth-b── (10.0.2.10) ns3
+ ns1 (10.0.1.10) ──veth-a──veth-ns2a── ns2 ──veth-ns2b──veth-b── (10.0.2.10) ns3
 
-&#x20;                       10.0.1.0/24    router    10.0.2.0/24```
+                       10.0.1.0/24    router    10.0.2.0/24```
 
 ### 4.3 Verifica namespace e indirizzi
 
@@ -130,15 +130,15 @@ Output atteso:
 ```
 PING 10.0.2.10 (10.0.2.10) 56(84) bytes of data.
 
-64 bytes from 10.0.2.10: icmp\_seq=1 ttl=63 time=8.20 ms
+64 bytes from 10.0.2.10: icmp\\\_seq=1 ttl=63 time=8.20 ms
 
-64 bytes from 10.0.2.10: icmp\_seq=2 ttl=63 time=0.259 ms
+64 bytes from 10.0.2.10: icmp\\\_seq=2 ttl=63 time=0.259 ms
 
-64 bytes from 10.0.2.10: icmp\_seq=3 ttl=63 time=0.083 ms
+64 bytes from 10.0.2.10: icmp\\\_seq=3 ttl=63 time=0.083 ms
 
 
 
-\--- 10.0.2.10 ping statistics ---
+\\--- 10.0.2.10 ping statistics ---
 
 3 packets transmitted, 3 received, 0% packet loss, time 2026ms
 
@@ -159,10 +159,11 @@ sudo ip netns exec ns1 traceroute -n 10.0.2.10
 Output atteso:
 
 ```
-traceroute to 10.0.2.10 (10.0.2.10), 30 hops max
-1  10.0.1.1   0.XXX ms   # → ns2, interfaccia veth-ns2a
-2  10.0.2.10  0.XXX ms   # → ns3
+traceroute to 10.0.2.10 (10.0.2.10), 30 hops max, 60 byte packets
 
+&#x20;1  10.0.1.1  1.568 ms  0.047 ms  0.022 ms
+
+&#x20;2  10.0.2.10  0.453 ms  0.033 ms  0.022 ms
 ```
 
 L'hop 1 (`10.0.1.1`) è `ns2`: conferma che il pacchetto passa fisicamente per il router prima di raggiungere la destinazione.
@@ -191,7 +192,7 @@ Output atteso:
 
 
 
-tcpdump: verbose output suppressed, use -v\[v]... for full protocol decode
+tcpdump: verbose output suppressed, use -v\\\[v]... for full protocol decode
 
 listening on veth-ns2a, link-type EN10MB (Ethernet), snapshot length 262144 bytes
 
@@ -215,33 +216,33 @@ listening on veth-ns2a, link-type EN10MB (Ethernet), snapshot length 262144 byte
 
 0 packets dropped by kernel
 
-\---
+\\---
 
-## 6\. Esperimenti di ablazione
+## 6\\. Esperimenti di ablazione
 
-### 6.1 Ablazione 1 — Disabilita ip\_forward in ns2
+### 6.1 Ablazione 1 — Disabilita ip\\\_forward in ns2
 
 ```bash
 # Disabilita il forwarding
-sudo ip netns exec ns2 sysctl -w net.ipv4.ip\_forward=0
+sudo ip netns exec ns2 sysctl -w net.ipv4.ip\\\_forward=0
 
 # Il ping ora fallisce: ns2 riceve il pacchetto ma lo droppa
 sudo ip netns exec ns1 ping -c 3 10.0.2.10
 # → 100% packet loss
 
 # Riabilita
-sudo ip netns exec ns2 sysctl -w net.ipv4.ip\_forward=1
+sudo ip netns exec ns2 sysctl -w net.ipv4.ip\\\_forward=1
 sudo ip netns exec ns1 ping -c 3 10.0.2.10
 # → funziona di nuovo
 ```
 
-**Spiegazione:** `ip\_forward=0` dice al kernel di comportarsi da *host* puro: scarta qualsiasi pacchetto il cui indirizzo di destinazione non sia uno degli indirizzi locali del namespace. Il bit `ip\_forward` è esattamente la differenza semantica tra host e router a livello kernel.
+**Spiegazione:** `ip\\\_forward=0` dice al kernel di comportarsi da *host* puro: scarta qualsiasi pacchetto il cui indirizzo di destinazione non sia uno degli indirizzi locali del namespace. Il bit `ip\\\_forward` è esattamente la differenza semantica tra host e router a livello kernel.
 
 ### 6.2 Ablazione 2 — Rimuovi la default route da ns3
 
 ```bash
 # Lancia tcpdump su ns3 in background per vedere i pacchetti in arrivo
-sudo ip netns exec ns3 tcpdump -i veth-b -n icmp \&
+sudo ip netns exec ns3 tcpdump -i veth-b -n icmp \\\&
 
 # Rimuovi la default route da ns3
 sudo ip netns exec ns3 ip route del default
@@ -249,7 +250,7 @@ sudo ip netns exec ns3 ip route del default
 # Ping da ns1: le request arrivano a ns3 (visibili in tcpdump)
 # ma le reply non sanno come tornare → timeout
 sudo ip netns exec ns1 ping -c 3 10.0.2.10
-# → Request timeout for icmp\_seq 1 (oppure 100% packet loss)
+# → Request timeout for icmp\\\_seq 1 (oppure 100% packet loss)
 
 # Ripristina
 sudo ip netns exec ns3 ip route add default via 10.0.2.1
@@ -281,13 +282,13 @@ ip netns list   # output vuoto: tutti i namespace sono stati rimossi
 
 **Domande aperte:**
 
-* Se al posto di veth dirette mettessi un bridge Linux (`ip link add br0 type bridge`), cosa cambierebbe? 
+* Se al posto di veth dirette mettessi un bridge Linux (`ip link add br0 type bridge`), cosa cambierebbe?
 
 Se utilizzassi un bridge (br0), cambieresti radicalmente la topologia da una serie di collegamenti punto-punto a una LAN virtuale condivisa. Cosa cambia: Invece di avere ns2 che fa da router tra ns1 e ns3, potresti collegare tutti e tre i namespace allo stesso bridge. In quel caso, si troverebbero tutti nello stesso "dominio di broadcast" (Layer 2). Comportamento: Per farli parlare, dovrebbero avere IP della stessa sottorete (es. tutti 10.0.1.x). Il traffico passerebbe attraverso il bridge basandosi sui MAC address, senza bisogno che il kernel di ns2 faccia "routing". Perché Docker lo fa: Docker crea un bridge (docker0) per permettere a tutti i container di una stessa macchina di comunicare velocemente tra loro come se fossero attaccati allo stesso switch fisico.
 
 
 
-* Aggiungere un quarto namespace `ns4` con `10.0.3.0/24` collegato a `ns2` richiederebbe solo un nuovo veth pair e un nuovo indirizzo su `ns2`: 
+* Aggiungere un quarto namespace `ns4` con `10.0.3.0/24` collegato a `ns2` richiederebbe solo un nuovo veth pair e un nuovo indirizzo su `ns2`:
 
 
 
